@@ -178,7 +178,7 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_marginEnd="12dp"
-                    android:src="@drawable/avatar_mom"
+                    android:src="@drawable/female"
                     android:contentDescription="Mom" />
 
                 <LinearLayout
@@ -217,7 +217,7 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_marginEnd="12dp"
-                    android:src="@drawable/avatar_dad"
+                    android:src="@drawable/male"
                     android:contentDescription="Dad" />
 
                 <LinearLayout
@@ -256,7 +256,7 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_marginEnd="12dp"
-                    android:src="@drawable/avatar_alexa"
+                    android:src="@drawable/female"
                     android:contentDescription="Alexa" />
 
                 <LinearLayout
@@ -295,7 +295,7 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_marginEnd="12dp"
-                    android:src="@drawable/avatar_jack"
+                    android:src="@drawable/male"
                     android:contentDescription="Jack" />
 
                 <LinearLayout

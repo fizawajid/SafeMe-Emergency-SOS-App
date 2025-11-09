@@ -26,6 +26,7 @@
     <string name="contacts_configured">5 contacts configured</string>
     <string name="search_contacts">Search contacts...</string>
     <string name="add_contact">+ Add Contact</string>
+    <string name="add_contact_short">+ Add Contact</string>
     <string name="contacts_icon">Contacts</string>
     <!-- Added contact names and their information -->
     <string name="mom">Mom</string>
@@ -47,6 +48,54 @@
     <string name="alexa">Alexa</string>
     <string name="alexa_phone">+1 (555) 123-4567</string>
     <string name="alexa_email">alexa@email.com</string>
+
+    <!-- Add Emergency Contact Form -->
+    <string name="add_emergency_contacts">Add Emergency Contacts</string>
+    <string name="add_new_emergency_contact">Add a new emergency contact who will receive alerts when you need help.</string>
+
+    <string name="basic_information">Basic Information</string>
+    <string name="full_name">Full Name</string>
+    <string name="enter_full_name">Enter full name</string>
+    <string name="relationship">Relationship</string>
+    <string name="select_relationship">Select relationship</string>
+    <string name="priority_level">Priority Level</string>
+
+    <string name="contact_information">Contact Information</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="phone_placeholder">+1 (555) 123-4567</string>
+    <string name="email_address">Email Address</string>
+    <string name="email_placeholder">email@example.com</string>
+
+    <string name="contact_methods">Contact Methods</string>
+    <string name="select_communication_methods">Select how this contact should be notified during emergencies</string>
+    <string name="sms_text_message">SMS Text Message</string>
+    <string name="phone_call">Phone Call</string>
+    <string name="email">Email</string>
+
+    <string name="additional_information">Additional Information</string>
+    <string name="medical_information">Medical Information</string>
+    <string name="medical_info_placeholder">Any additional information this contact should know (allergies, conditions, medications, etc.)</string>
+    <string name="notes">Notes</string>
+    <string name="notes_placeholder">Any additional notes about this contact (availability, preferences, notifications, etc.)</string>
+
+    <string name="cancel">Cancel</string>
+    <string name="add_contact_button">Add Contact</string>
+
+    <!-- Relationship Options -->
+    <string name="mother">Mother</string>
+    <string name="father">Father</string>
+    <string name="friend">Friend</string>
+    <string name="sibling">Sibling</string>
+    <string name="spouse">Spouse</string>
+    <string name="doctor">Doctor</string>
+    <string name="other">Other</string>
+
+    <!-- Alert Features -->
+    <string name="personal_safety_alert">Personal Safety</string>
+    <string name="current_location_shared">Current location will be shared</string>
+    <string name="additional_message">Additional Message (Optional)</string>
+    <string name="add_additional_detail">Add any additional detail about your situation...</string>
+    <string name="contacts_to_notify">Contacts to Notify</string>
 
     <!-- Priority Levels -->
     <string name="high_priority">High Priority</string>

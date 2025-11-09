@@ -448,10 +448,9 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:marginTop="16dp"
-        android:gap="12dp">
+        android:marginTop="16dp">
 
-        <Button
+        <TextView
             android:id="@+id/btn_cancel"
             android:layout_width="0dp"
             android:layout_height="48dp"
@@ -460,9 +459,12 @@
             android:background="@drawable/button_cancel"
             android:textColor="#00FF00"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true" />
 
-        <Button
+        <TextView
             android:id="@+id/btn_add_contact"
             android:layout_width="0dp"
             android:layout_height="48dp"
@@ -471,7 +473,10 @@
             android:background="@drawable/button_add_contact_action"
             android:textColor="#000000"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true" />
 
     </LinearLayout>
 

@@ -42,7 +42,7 @@
             <ImageView
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:src="@drawable/ic_warning_alert"
+                android:src="@drawable/error"
                 android:contentDescription="@string/warning"
                 android:tint="#FF6B6B"
                 android:layout_marginRight="8dp" />
@@ -111,7 +111,7 @@
                     <ImageView
                         android:layout_width="32dp"
                         android:layout_height="32dp"
-                        android:src="@drawable/ic_warning_alert"
+                        android:src="@drawable/error"
                         android:contentDescription="@string/personal_safety"
                         android:tint="#FF6B6B"
                         android:layout_marginRight="16dp"
@@ -221,7 +221,7 @@
                     <ImageView
                         android:layout_width="32dp"
                         android:layout_height="32dp"
-                        android:src="@drawable/ic_warning_alert"
+                        android:src="@drawable/error"
                         android:contentDescription="@string/medical_emergency"
                         android:tint="#FF6B6B"
                         android:layout_marginRight="16dp"

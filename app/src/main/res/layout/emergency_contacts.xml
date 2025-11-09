@@ -28,8 +28,8 @@
                 android:contentDescription="@string/back" />
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:src="@drawable/ic_contacts"
                 android:tint="#00ff00"
                 android:layout_marginStart="12dp"
@@ -74,16 +74,20 @@
             android:background="@drawable/search_input_background"
             android:inputType="text" />
 
-        <Button
+        <TextView
             android:id="@+id/btn_add_contact"
             android:layout_width="wrap_content"
             android:layout_height="48dp"
-            android:text="@string/add_contact"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="@string/add_contact_short"
+            android:background="@drawable/button_add_contact_action"
             android:textColor="#000000"
             android:textSize="13sp"
-            android:background="@drawable/button_add_contact"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp" />
+            android:textStyle="bold"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
 
     <!-- Scrollable Content -->
@@ -123,7 +127,7 @@
                 <ImageView
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/avatar_mom"
+                    android:background="@drawable/female"
                     android:contentDescription="@string/mom" />
 
                 <LinearLayout
@@ -201,7 +205,7 @@
                 <ImageView
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/avatar_dad"
+                    android:background="@drawable/male"
                     android:contentDescription="@string/dad" />
 
                 <LinearLayout
@@ -279,7 +283,7 @@
                 <ImageView
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/avatar_marla"
+                    android:background="@drawable/female"
                     android:contentDescription="@string/dr_marla" />
 
                 <LinearLayout
@@ -357,7 +361,7 @@
                 <ImageView
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/avatar_jack"
+                    android:background="@drawable/male"
                     android:contentDescription="@string/jack" />
 
                 <LinearLayout
@@ -435,7 +439,7 @@
                 <ImageView
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/avatar_alexa"
+                    android:background="@drawable/female"
                     android:contentDescription="@string/alexa" />
 
                 <LinearLayout
