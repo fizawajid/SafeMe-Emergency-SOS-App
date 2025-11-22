@@ -65,6 +65,7 @@
 
             <!-- 6 Code Boxes -->
             <LinearLayout
+                android:id="@+id/etotp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
