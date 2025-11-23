@@ -13,10 +13,12 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthProvider
+import com.google.firebase.database.FirebaseDatabase
 
 class otp : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
+    private lateinit var database: FirebaseDatabase
     private var verificationId: String? = null
     private lateinit var otpBoxes: List<EditText>
 
@@ -25,6 +27,7 @@ class otp : AppCompatActivity() {
         setContentView(R.layout.activity_otp)
 
         auth = FirebaseAuth.getInstance()
+        database = FirebaseDatabase.getInstance()
 
         // Get verification ID from intent
         verificationId = intent.getStringExtra("verificationId")
@@ -54,7 +57,7 @@ class otp : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            verifyOtp(otp)
+            verifyOtp(otp, phoneNumber)
         }
     }
 
@@ -90,27 +93,56 @@ class otp : AppCompatActivity() {
         return otpBoxes.joinToString("") { it.text.toString().trim() }
     }
 
-    private fun verifyOtp(otp: String) {
+    private fun verifyOtp(otp: String, phoneNumber: String?) {
         if (verificationId == null) {
             Toast.makeText(this, "Verification ID is missing", Toast.LENGTH_SHORT).show()
             return
         }
 
         val credential = PhoneAuthProvider.getCredential(verificationId!!, otp)
-        signInWithPhoneAuthCredential(credential)
+        signInWithPhoneAuthCredential(credential, phoneNumber)
     }
 
-    private fun signInWithPhoneAuthCredential(credential: PhoneAuthCredential) {
+    private fun signInWithPhoneAuthCredential(credential: PhoneAuthCredential, phoneNumber: String?) {
         auth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    Toast.makeText(this, "Verification successful!", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, dashboard::class.java))
-                    finish()
+                    val user = auth.currentUser
+                    user?.let {
+                        // Save user to Realtime Database
+                        val userId = it.uid
+                        val phone = phoneNumber ?: it.phoneNumber ?: ""
+
+                        val userMap = hashMapOf(
+                            "userId" to userId,
+                            "phoneNumber" to phone,
+                            "authMethod" to "phone",
+                            "createdAt" to System.currentTimeMillis()
+                        )
+
+                        database.reference.child("users").child(userId)
+                            .setValue(userMap)
+                            .addOnSuccessListener {
+                                Toast.makeText(
+                                    this,
+                                    "Verification successful!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                startActivity(Intent(this, dashboard::class.java))
+                                finish()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(
+                                    this,
+                                    "Failed to save user data: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    }
                 } else {
                     Toast.makeText(
                         this,
-                        "Verification failed: ${task.exception?.message}",
+                        "Invalid OTP: ${task.exception?.message}",
                         Toast.LENGTH_LONG
                     ).show()
                 }

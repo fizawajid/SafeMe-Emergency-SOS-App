@@ -8,16 +8,19 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 
 class createaccount_email : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
+    private lateinit var database: FirebaseDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_createaccount_email)
 
         auth = FirebaseAuth.getInstance()
+        database = FirebaseDatabase.getInstance()
 
         val etEmail = findViewById<EditText>(R.id.etEmail)
         val etPassword = findViewById<EditText>(R.id.etPassword)
@@ -61,9 +64,36 @@ class createaccount_email : AppCompatActivity() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, dashboard::class.java))
-                    finish()
+                    val user = auth.currentUser
+                    user?.let {
+                        // Save user to Realtime Database
+                        val userId = it.uid
+                        val userMap = hashMapOf(
+                            "userId" to userId,
+                            "email" to email,
+                            "authMethod" to "email",
+                            "createdAt" to System.currentTimeMillis()
+                        )
+
+                        database.reference.child("users").child(userId)
+                            .setValue(userMap)
+                            .addOnSuccessListener {
+                                Toast.makeText(
+                                    this,
+                                    "Account created successfully!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                startActivity(Intent(this, dashboard::class.java))
+                                finish()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(
+                                    this,
+                                    "Failed to save user data: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    }
                 } else {
                     Toast.makeText(
                         this,

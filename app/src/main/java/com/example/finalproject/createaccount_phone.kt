@@ -12,11 +12,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
+import com.google.firebase.database.FirebaseDatabase
 import java.util.concurrent.TimeUnit
 
 class createaccount_phone : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
+    private lateinit var database: FirebaseDatabase
     private var verificationId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,6 +26,7 @@ class createaccount_phone : AppCompatActivity() {
         setContentView(R.layout.activity_createaccount_phone)
 
         auth = FirebaseAuth.getInstance()
+        database = FirebaseDatabase.getInstance()
 
         val etPhone = findViewById<EditText>(R.id.etPhone)
         val tvEmail = findViewById<TextView>(R.id.email)
@@ -99,9 +102,38 @@ class createaccount_phone : AppCompatActivity() {
         auth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    Toast.makeText(this, "Phone verification successful!", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, dashboard::class.java))
-                    finish()
+                    val user = auth.currentUser
+                    user?.let {
+                        // Save user to Realtime Database
+                        val userId = it.uid
+                        val phoneNumber = it.phoneNumber ?: ""
+
+                        val userMap = hashMapOf(
+                            "userId" to userId,
+                            "phoneNumber" to phoneNumber,
+                            "authMethod" to "phone",
+                            "createdAt" to System.currentTimeMillis()
+                        )
+
+                        database.reference.child("users").child(userId)
+                            .setValue(userMap)
+                            .addOnSuccessListener {
+                                Toast.makeText(
+                                    this,
+                                    "Phone verification successful!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                startActivity(Intent(this, dashboard::class.java))
+                                finish()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(
+                                    this,
+                                    "Failed to save user data: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    }
                 } else {
                     Toast.makeText(
                         this,
