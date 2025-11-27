@@ -255,6 +255,8 @@ class personal_safety : AppCompatActivity() {
 
         Toast.makeText(this, "Sending alerts to ${contactsWithEmail.size} contacts...", Toast.LENGTH_SHORT).show()
     }
+        // Save alert to Firebase with location
+        saveAlertToFirebase(alertMessage, additionalMessage)
 
     private fun showProgress() {
         progressContainer.visibility = View.VISIBLE
@@ -278,8 +280,13 @@ class personal_safety : AppCompatActivity() {
         val sb = StringBuilder()
         sb.append("🚨 PERSONAL EMERGENCY ALERT 🚨\n\n")
         sb.append("From: $SENDER_EMAIL\n")
+        sb.append("From: ${FirebaseAuth.getInstance().currentUser?.email ?: "Unknown"}\n")
         sb.append("Time: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())}\n\n")
         if (additionalMessage.isNotEmpty()) sb.append("Message: $additionalMessage\n\n")
+
+        if (additionalMessage.isNotEmpty()) {
+            sb.append("Message: $additionalMessage\n\n")
+        }
 
         finishData?.let { data ->
             sb.append("=== Medical Information ===\n")
@@ -293,15 +300,17 @@ class personal_safety : AppCompatActivity() {
         return sb.toString()
     }
 
-    private fun saveAlertToFirebase(message: String) {
+    private fun saveAlertToFirebase(message: String, additionalMessage: String) {
         val alertData = hashMapOf(
             "userId" to userId,
             "userEmail" to SENDER_EMAIL,
             "type" to "Personal Emergency",
             "message" to message,
-            "additionalMessage" to etAdditionalMessage.text.toString(),
+            "additionalMessage" to additionalMessage,
             "timestamp" to System.currentTimeMillis(),
             "contactsNotified" to contactsList.size,
+            "location" to "Current Location", // You can integrate actual location here
+            "status" to "Unresolved",
             "contacts" to contactsList.map {
                 hashMapOf(
                     "name" to it.fullName,
