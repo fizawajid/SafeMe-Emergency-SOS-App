@@ -5,10 +5,8 @@ import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.android.volley.Request.Method.*
-import com.android.volley.Response
+import com.android.volley.Request.Method.POST
 import com.android.volley.toolbox.JsonObjectRequest
-import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
@@ -28,20 +26,19 @@ class personal_safety : AppCompatActivity() {
 
     private val contactsList = mutableListOf<EmergencyContact>()
     private var finishData: FinishData? = null
+
     private val userId = FirebaseAuth.getInstance().currentUser?.uid ?: "unknown_user"
 
-    // Email tracking
+    // EmailJS
+    private val SENDER_EMAIL = FirebaseAuth.getInstance().currentUser?.email ?: "noreply@safeme.com"
+    private val EMAILJS_SERVICE_ID = "service_7c31t4s"
+    private val EMAILJS_TEMPLATE_ID = "template_6woyk8b"
+    private val EMAILJS_PUBLIC_KEY = "z0XPnqySWvklrNwlF"
+
+    // Progress counters
     private var emailsSent = 0
     private var emailsFailed = 0
     private var totalEmailsToSend = 0
-
-    // Get sender email from logged in user
-    private val SENDER_EMAIL = FirebaseAuth.getInstance().currentUser?.email ?: "noreply@safeme.com"
-
-    // EmailJS credentials (replace with your real values)
-    private val EMAILJS_SERVICE_ID = "service_7c31t4s"
-    private val EMAILJS_TEMPLATE_ID = "template_6woyk8b"
-    private val EMAILJS_PUBLIC_KEY = "z0XPnqySWvklrNwlF" // user_id / public key
 
     companion object {
         private const val TAG = "PersonalSafety"
@@ -55,8 +52,6 @@ class personal_safety : AppCompatActivity() {
         setupClickListeners()
         loadFinishData()
         loadEmergencyContacts()
-
-        Log.d(TAG, "Sender email: $SENDER_EMAIL")
     }
 
     private fun initializeViews() {
@@ -65,9 +60,10 @@ class personal_safety : AppCompatActivity() {
         btnSendAlert = findViewById(R.id.btnSendAlert)
         tvContactCount = findViewById(R.id.tvContactCount)
         contactsContainer = findViewById(R.id.contactsContainer)
+
+        progressContainer = findViewById(R.id.progressContainer)
         progressBar = findViewById(R.id.progressBar)
         tvProgressStatus = findViewById(R.id.tvProgressStatus)
-        progressContainer = findViewById(R.id.progressContainer)
     }
 
     private fun setupClickListeners() {
@@ -76,15 +72,16 @@ class personal_safety : AppCompatActivity() {
     }
 
     private fun loadFinishData() {
-        val finishRef = FirebaseDatabase.getInstance().getReference("finish").child(userId)
-
-        finishRef.get().addOnSuccessListener { snapshot ->
-            finishData = snapshot.getValue(FinishData::class.java)
-            Log.d(TAG, "Finish data loaded: $finishData")
-        }.addOnFailureListener { e ->
-            Log.e(TAG, "Failed to load finish data", e)
-            Toast.makeText(this, "Failed to load user data: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
+        FirebaseDatabase.getInstance()
+            .getReference("finish")
+            .child(userId)
+            .get()
+            .addOnSuccessListener {
+                finishData = it.getValue(FinishData::class.java)
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to load user data", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun loadEmergencyContacts() {
@@ -93,14 +90,13 @@ class personal_safety : AppCompatActivity() {
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 contactsList.clear()
+
                 for (contactSnapshot in snapshot.children) {
                     val contact = contactSnapshot.getValue(EmergencyContact::class.java)
-                    contact?.let {
-                        contactsList.add(it)
-                        Log.d(TAG, "Loaded contact: ${it.fullName}, Email: ${it.email}")
-                    }
+                    contact?.let { contactsList.add(it) }
                 }
-                // Sort by priority: High -> Medium -> Low
+
+                // Sort by priority
                 contactsList.sortWith(compareBy {
                     when (it.priorityLevel) {
                         "High" -> 1
@@ -109,96 +105,89 @@ class personal_safety : AppCompatActivity() {
                         else -> 4
                     }
                 })
+
                 displayContacts()
                 updateContactCount()
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, "Failed to load contacts", error.toException())
-                Toast.makeText(this@personal_safety, "Failed to load contacts: ${error.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@personal_safety, "Failed: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
 
     private fun displayContacts() {
         contactsContainer.removeAllViews()
+
         if (contactsList.isEmpty()) {
-            val emptyView = TextView(this).apply {
-                text = "No emergency contacts found. Please add contacts first."
-                setTextColor(resources.getColor(R.color.text_secondary, null))
-                textSize = 14f
+            val empty = TextView(this).apply {
+                text = "No emergency contacts found."
                 setPadding(16, 16, 16, 16)
             }
-            contactsContainer.addView(emptyView)
+            contactsContainer.addView(empty)
             return
         }
+
         for (contact in contactsList) {
-            val contactView = createContactView(contact)
-            contactsContainer.addView(contactView)
+            contactsContainer.addView(createContactView(contact))
         }
     }
 
     private fun createContactView(contact: EmergencyContact): View {
-        val contactView = LinearLayout(this).apply {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = 16 }
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
         }
 
-        val imgAvatar = ImageView(this).apply {
+        val avatar = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(48, 48)
             setImageResource(getAvatarResource(contact))
         }
-        contactView.addView(imgAvatar)
+        layout.addView(avatar)
 
-        val contentLayout = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = 12
-            }
+        val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                .apply { marginStart = 12 }
         }
 
-        val tvName = TextView(this).apply {
+        val name = TextView(this).apply {
             text = contact.fullName
             setTextColor(resources.getColor(android.R.color.white, null))
             textSize = 16f
-            setTypeface(null, android.graphics.Typeface.BOLD)
         }
-        contentLayout.addView(tvName)
 
-        val tvPhone = TextView(this).apply {
+        val phone = TextView(this).apply {
             text = contact.phoneNumber
             setTextColor(resources.getColor(R.color.text_secondary, null))
             textSize = 14f
         }
-        contentLayout.addView(tvPhone)
 
+        content.addView(name)
+        content.addView(phone)
+
+        // Show email if available
         if (!contact.email.isNullOrBlank()) {
-            val tvEmail = TextView(this).apply {
+            val email = TextView(this).apply {
                 text = contact.email
                 setTextColor(resources.getColor(R.color.text_secondary, null))
                 textSize = 12f
             }
-            contentLayout.addView(tvEmail)
+            content.addView(email)
         }
 
-        contactView.addView(contentLayout)
-        return contactView
+        layout.addView(content)
+        return layout
     }
 
     private fun getAvatarResource(contact: EmergencyContact): Int {
         return when {
-            contact.fullName.contains("mom", ignoreCase = true) ||
-                    contact.fullName.contains("mother", ignoreCase = true) ||
-                    contact.relationship.equals("mother", ignoreCase = true) -> R.drawable.female
-
-            contact.fullName.contains("dad", ignoreCase = true) ||
-                    contact.fullName.contains("father", ignoreCase = true) ||
-                    contact.relationship.equals("father", ignoreCase = true) -> R.drawable.male
-
+            contact.relationship.equals("mother", true) -> R.drawable.female
+            contact.relationship.equals("father", true) -> R.drawable.male
             else -> R.drawable.male
         }
     }
@@ -209,54 +198,32 @@ class personal_safety : AppCompatActivity() {
     }
 
     private fun sendEmergencyAlert() {
-        if (contactsList.isEmpty()) {
-            Toast.makeText(this, "No emergency contacts available. Please add contacts first.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Validate contacts have emails
         val contactsWithEmail = contactsList.filter { !it.email.isNullOrBlank() }
 
         if (contactsWithEmail.isEmpty()) {
-            Toast.makeText(this, "No contacts have email addresses! Please add email addresses to your contacts.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "No contacts with email found.", Toast.LENGTH_LONG).show()
             return
         }
 
-        // Show progress UI
+        // Show progress
         showProgress()
 
-        // Disable button to prevent multiple clicks
         btnSendAlert.isEnabled = false
         btnSendAlert.alpha = 0.5f
 
-        val additionalMessage = etAdditionalMessage.text.toString().trim()
-        val alertMessage = buildAlertMessage(additionalMessage)
+        val message = buildAlertMessage(etAdditionalMessage.text.toString())
+        saveAlertToFirebase(message)
 
-        // Save alert in Firebase
-        saveAlertToFirebase(alertMessage)
-
-        // Reset counters
         emailsSent = 0
         emailsFailed = 0
         totalEmailsToSend = contactsWithEmail.size
 
-        Log.d(TAG, "Sending alerts to ${contactsWithEmail.size} contacts")
-        updateProgress(0, totalEmailsToSend)
-
-        // Send emails (using EmailJS)
-        // If you send many emails, consider spacing them out to avoid provider limits.
-        for ((index, contact) in contactsWithEmail.withIndex()) {
-            contact.email?.let { email ->
-                // Optional: stagger requests slightly to avoid rate limits:
-                // Handler(Looper.getMainLooper()).postDelayed({ sendEmail(email, contact.fullName, alertMessage) }, index * 250L)
-                sendEmail(email, contact.fullName, alertMessage)
-            }
+        for (contact in contactsWithEmail) {
+            sendEmail(contact.email!!, contact.fullName, message)
         }
 
-        Toast.makeText(this, "Sending alerts to ${contactsWithEmail.size} contacts...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Sending alerts...", Toast.LENGTH_SHORT).show()
     }
-        // Save alert to Firebase with location
-        saveAlertToFirebase(alertMessage, additionalMessage)
 
     private fun showProgress() {
         progressContainer.visibility = View.VISIBLE
@@ -267,50 +234,42 @@ class personal_safety : AppCompatActivity() {
     private fun hideProgress() {
         progressContainer.visibility = View.GONE
         btnSendAlert.isEnabled = true
-        btnSendAlert.alpha = 1.0f
+        btnSendAlert.alpha = 1f
     }
 
-    private fun updateProgress(completed: Int, total: Int) {
-        val progress = if (total > 0) (completed * 100) / total else 0
-        progressBar.progress = progress
-        tvProgressStatus.text = "Sending alerts... ($completed/$total)"
+    private fun updateProgress(done: Int, total: Int) {
+        val percent = (done * 100) / total
+        progressBar.progress = percent
+        tvProgressStatus.text = "Sending alerts... ($done/$total)"
     }
 
-    private fun buildAlertMessage(additionalMessage: String): String {
+    private fun buildAlertMessage(extra: String): String {
         val sb = StringBuilder()
-        sb.append("🚨 PERSONAL EMERGENCY ALERT 🚨\n\n")
+        sb.append("🚨 PERSONAL SAFETY ALERT 🚨\n\n")
         sb.append("From: $SENDER_EMAIL\n")
-        sb.append("From: ${FirebaseAuth.getInstance().currentUser?.email ?: "Unknown"}\n")
-        sb.append("Time: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())}\n\n")
-        if (additionalMessage.isNotEmpty()) sb.append("Message: $additionalMessage\n\n")
+        sb.append("Time: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date())}\n\n")
 
-        if (additionalMessage.isNotEmpty()) {
-            sb.append("Message: $additionalMessage\n\n")
+        if (extra.isNotEmpty())
+            sb.append("Message: $extra\n\n")
+
+        finishData?.let {
+            sb.append("=== Medical Info ===\n")
+            if (it.allergies.isNotEmpty()) sb.append("Allergies: ${it.allergies}\n")
+            if (it.medication.isNotEmpty()) sb.append("Medication: ${it.medication}\n")
+            if (it.notes.isNotEmpty()) sb.append("Notes: ${it.notes}\n")
         }
 
-        finishData?.let { data ->
-            sb.append("=== Medical Information ===\n")
-            if (data.allergies.isNotEmpty()) sb.append("Allergies: ${data.allergies}\n")
-            if (data.medication.isNotEmpty()) sb.append("Medication: ${data.medication}\n")
-            if (data.notes.isNotEmpty()) sb.append("Medical Notes: ${data.notes}\n")
-            if (data.locationEnabled) sb.append("\n📍 Location sharing is enabled\n")
-        }
-
-        sb.append("\nThis is an automated emergency alert. Please respond immediately.")
+        sb.append("\nThis is an automated alert. Respond immediately.")
         return sb.toString()
     }
 
-    private fun saveAlertToFirebase(message: String, additionalMessage: String) {
-        val alertData = hashMapOf(
+    private fun saveAlertToFirebase(msg: String) {
+        val data = hashMapOf(
             "userId" to userId,
             "userEmail" to SENDER_EMAIL,
-            "type" to "Personal Emergency",
-            "message" to message,
-            "additionalMessage" to additionalMessage,
+            "type" to "Personal Safety",
+            "message" to msg,
             "timestamp" to System.currentTimeMillis(),
-            "contactsNotified" to contactsList.size,
-            "location" to "Current Location", // You can integrate actual location here
-            "status" to "Unresolved",
             "contacts" to contactsList.map {
                 hashMapOf(
                     "name" to it.fullName,
@@ -324,15 +283,10 @@ class personal_safety : AppCompatActivity() {
         FirebaseDatabase.getInstance()
             .getReference("emergency_alerts")
             .push()
-            .setValue(alertData)
-            .addOnSuccessListener { Log.d(TAG, "Alert saved to Firebase successfully") }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to save alert to Firebase", e)
-                Toast.makeText(this, "Failed to log alert: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            .setValue(data)
     }
 
-    private fun sendEmail(toEmail: String, contactName: String, message: String) {
+    private fun sendEmail(toEmail: String, name: String, message: String) {
         val url = "https://api.emailjs.com/api/v1.0/email/send"
 
         val jsonBody = JSONObject().apply {
@@ -341,25 +295,23 @@ class personal_safety : AppCompatActivity() {
             put("user_id", EMAILJS_PUBLIC_KEY)
             put("template_params", JSONObject().apply {
                 put("to_email", toEmail)
-                put("contact_name", contactName)
+                put("contact_name", name)
                 put("alert_message", message)
             })
         }
 
-        val request = object : JsonObjectRequest(
-            POST, url, jsonBody,
-            { response ->
+        val request = object : JsonObjectRequest(POST, url, jsonBody,
+            {
                 emailsSent++
                 updateProgress(emailsSent + emailsFailed, totalEmailsToSend)
-                checkIfAllEmailsSent()
+                checkCompletion()
             },
-            { error ->
+            {
                 emailsFailed++
                 updateProgress(emailsSent + emailsFailed, totalEmailsToSend)
-                checkIfAllEmailsSent()
-                Log.e("EmailJS", "Error sending email: ${error.message}")
-            }
-        ) {
+                checkCompletion()
+            }) {
+
             override fun getHeaders(): MutableMap<String, String> {
                 return hashMapOf(
                     "Content-Type" to "application/json",
@@ -372,37 +324,18 @@ class personal_safety : AppCompatActivity() {
         Volley.newRequestQueue(this).add(request)
     }
 
-
-
-    private fun checkIfAllEmailsSent() {
+    private fun checkCompletion() {
         if (emailsSent + emailsFailed >= totalEmailsToSend) {
-            runOnUiThread {
-                updateProgress(totalEmailsToSend, totalEmailsToSend)
-
-                val message = when {
-                    emailsFailed == 0 -> {
-                        tvProgressStatus.text = "✓ All alerts sent successfully!"
-                        "✓ All alerts sent successfully! ($emailsSent/$totalEmailsToSend)"
-                    }
-                    emailsSent == 0 -> {
-                        tvProgressStatus.text = "✗ Failed to send all alerts"
-                        "✗ Failed to send all alerts. Please check your internet connection and try again."
-                    }
-                    else -> {
-                        tvProgressStatus.text = "⚠ Partially sent: $emailsSent/$totalEmailsToSend"
-                        "⚠ Sent: $emailsSent, Failed: $emailsFailed (Total: $totalEmailsToSend)"
-                    }
-                }
-
-                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-                Log.d(TAG, "Email sending complete: $message")
-
-                // Hide progress and finish after delay
-                btnSendAlert.postDelayed({
-                    hideProgress()
-                    if (emailsSent > 0) finish()
-                }, 3000)
+            tvProgressStatus.text = when {
+                emailsFailed == 0 -> "✓ All alerts sent!"
+                emailsSent == 0 -> "✗ Failed to send alerts"
+                else -> "⚠ Partial: $emailsSent sent, $emailsFailed failed"
             }
+
+            btnSendAlert.postDelayed({
+                hideProgress()
+                finish()
+            }, 2500)
         }
     }
 }
