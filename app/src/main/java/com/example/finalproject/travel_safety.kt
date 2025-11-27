@@ -36,9 +36,6 @@ class travel_safety : AppCompatActivity() {
         etAdditionalMessage = findViewById(R.id.etAdditionalMessage)
         btnSendAlert = findViewById(R.id.btnSendAlert)
         tvContactCount = findViewById(R.id.tvContactCount)
-
-        // Get the LinearLayout that will hold contact items
-        // This should be inside your ScrollView in the XML
         contactsContainer = findViewById(R.id.contactsContainer)
     }
 
@@ -77,7 +74,6 @@ class travel_safety : AppCompatActivity() {
                     contact?.let { contactsList.add(it) }
                 }
 
-                // Sort by priority: High -> Medium -> Low
                 contactsList.sortWith(compareBy {
                     when(it.priorityLevel) {
                         "High" -> 1
@@ -133,14 +129,12 @@ class travel_safety : AppCompatActivity() {
             gravity = android.view.Gravity.CENTER_VERTICAL
         }
 
-        // Avatar
         val imgAvatar = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(48, 48)
             setImageResource(getAvatarResource(contact))
         }
         contactView.addView(imgAvatar)
 
-        // Content container
         val contentLayout = LinearLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 0,
@@ -152,7 +146,6 @@ class travel_safety : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
         }
 
-        // Name
         val tvName = TextView(this).apply {
             text = contact.fullName
             setTextColor(resources.getColor(android.R.color.white, null))
@@ -161,7 +154,6 @@ class travel_safety : AppCompatActivity() {
         }
         contentLayout.addView(tvName)
 
-        // Phone
         val tvPhone = TextView(this).apply {
             text = contact.phoneNumber
             setTextColor(resources.getColor(R.color.text_secondary, null))
@@ -202,18 +194,10 @@ class travel_safety : AppCompatActivity() {
         }
 
         val additionalMessage = etAdditionalMessage.text.toString().trim()
-
-        // Build alert message
         val alertMessage = buildAlertMessage(additionalMessage)
 
-        // Save alert to Firebase
-        saveAlertToFirebase(alertMessage)
-
-        // In a real app, you would:
-        // 1. Send SMS to contacts with smsEnabled
-        // 2. Make calls to contacts with callEnabled
-        // 3. Send emails to contacts with emailEnabled
-        // 4. Share location if enabled
+        // Save alert to Firebase with location
+        saveAlertToFirebase(alertMessage, additionalMessage)
 
         Toast.makeText(
             this,
@@ -227,17 +211,13 @@ class travel_safety : AppCompatActivity() {
     private fun buildAlertMessage(additionalMessage: String): String {
         val sb = StringBuilder()
         sb.append("🚨 TRAVEL EMERGENCY ALERT 🚨\n\n")
-
-        // User info
         sb.append("From: ${FirebaseAuth.getInstance().currentUser?.email ?: "Unknown"}\n")
         sb.append("Time: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())}\n\n")
 
-        // Additional message
         if (additionalMessage.isNotEmpty()) {
             sb.append("Message: $additionalMessage\n\n")
         }
 
-        // Medical info from finish data
         finishData?.let { data ->
             if (data.allergies.isNotEmpty()) {
                 sb.append("Allergies: ${data.allergies}\n")
@@ -254,18 +234,19 @@ class travel_safety : AppCompatActivity() {
         }
 
         sb.append("\nThis is an automated emergency alert. Please respond immediately.")
-
         return sb.toString()
     }
 
-    private fun saveAlertToFirebase(message: String) {
+    private fun saveAlertToFirebase(message: String, additionalMessage: String) {
         val alertData = hashMapOf(
             "userId" to userId,
             "type" to "Travel Emergency",
             "message" to message,
-            "additionalMessage" to etAdditionalMessage.text.toString(),
+            "additionalMessage" to additionalMessage,
             "timestamp" to System.currentTimeMillis(),
             "contactsNotified" to contactsList.size,
+            "location" to "Current Location", // You can integrate actual location here
+            "status" to "Unresolved",
             "contacts" to contactsList.map {
                 hashMapOf(
                     "name" to it.fullName,
