@@ -169,7 +169,7 @@
                         android:layout_height="32dp"
                         android:src="@drawable/location"
                         android:contentDescription="@string/travel_emergency"
-                        app:tint="#FFA500"
+                        app:tint="#00DD00"
                         android:layout_marginRight="16dp"
                         android:scaleType="centerInside" />
 
@@ -308,7 +308,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:checked="true"
-            android:thumbTint="#00DD00"
+            android:thumbTint="@color/theme"
             android:trackTint="#333333" />
 
     </LinearLayout>

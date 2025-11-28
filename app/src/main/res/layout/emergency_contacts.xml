@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -31,9 +32,9 @@
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:src="@drawable/ic_contacts"
-                android:tint="#00ff00"
                 android:layout_marginStart="12dp"
-                android:contentDescription="@string/contacts_icon" />
+                android:contentDescription="@string/contacts_icon"
+                app:tint="@color/theme" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -73,14 +74,15 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:background="@drawable/search_input_background"
-            android:inputType="text" />
+            android:inputType="text"
+            android:layout_marginEnd="12dp" />
 
         <TextView
             android:id="@+id/btn_add_contact"
             android:layout_width="wrap_content"
             android:layout_height="48dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
             android:text="@string/add_contact_short"
             android:background="@drawable/button_add_contact_action"
             android:textColor="#000000"
@@ -188,16 +190,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
+                    android:layout_marginTop="8dp"
+                    android:baselineAligned="false">
 
                     <LinearLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:orientation="vertical"
                         android:background="@drawable/priority_summary_high"
                         android:padding="12dp"
-                        android:layout_marginEnd="4dp">
+                        android:layout_marginEnd="6dp">
 
                         <TextView
                             android:layout_width="match_parent"
@@ -220,13 +223,13 @@
 
                     <LinearLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:orientation="vertical"
                         android:background="@drawable/priority_summary_medium"
                         android:padding="12dp"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginEnd="4dp">
+                        android:layout_marginStart="6dp"
+                        android:layout_marginEnd="6dp">
 
                         <TextView
                             android:layout_width="match_parent"
@@ -249,12 +252,12 @@
 
                     <LinearLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:orientation="vertical"
                         android:background="@drawable/priority_summary_low"
                         android:padding="12dp"
-                        android:layout_marginStart="4dp">
+                        android:layout_marginStart="6dp">
 
                         <TextView
                             android:layout_width="match_parent"

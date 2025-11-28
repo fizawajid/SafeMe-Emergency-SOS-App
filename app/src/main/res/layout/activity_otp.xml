@@ -150,7 +150,7 @@
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textAllCaps="false"
-                android:backgroundTint="@color/green_primary"
+                android:backgroundTint="@color/theme"
                 android:fontFamily="sans-serif-medium"
                 android:clipToOutline="true" />
 

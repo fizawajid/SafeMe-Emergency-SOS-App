@@ -3,7 +3,6 @@ package com.example.finalproject
 import android.content.Intent
 import android.os.Bundle
 import android.widget.FrameLayout
-import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 
 class emergency_type : AppCompatActivity() {
@@ -19,16 +18,16 @@ class emergency_type : AppCompatActivity() {
 
         // 👉 When "Personal Safety" card is pressed
         cardPersonalSafety.setOnClickListener {
-            startActivity(Intent(this, personal_safety::class.java))
+            startActivity(Intent(this, PersonalSafety::class.java))
         }
 
         // 👉 When "Travel Emergency" card is pressed
         cardTravelEmergency.setOnClickListener {
-            startActivity(Intent(this, travel_safety::class.java))
+            startActivity(Intent(this, TravelSafety::class.java))
         }
 
         cardMedicalEmergency.setOnClickListener {
-            startActivity(Intent(this, medical_safety::class.java))
+            startActivity(Intent(this, MedicalSafety::class.java))
         }
     }
 }

@@ -6,11 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 
 class emergency_contacts : AppCompatActivity() {
 
     private lateinit var database: DatabaseReference
+    private lateinit var auth: FirebaseAuth
     private lateinit var contactsContainer: LinearLayout
     private lateinit var searchContacts: EditText
     private lateinit var btnAddContact: TextView
@@ -24,7 +26,22 @@ class emergency_contacts : AppCompatActivity() {
         setContentView(R.layout.emergency_contacts)
 
         // Initialize Firebase
-        database = FirebaseDatabase.getInstance().reference.child("emergency_contacts")
+        auth = FirebaseAuth.getInstance()
+
+        // Check if user is logged in
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            Toast.makeText(this, "Please log in first", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        // Initialize database reference with user-specific path
+        database = FirebaseDatabase.getInstance()
+            .reference
+            .child("users")
+            .child(currentUser.uid)
+            .child("emergency_contacts")
 
         // Initialize views
         initializeViews()
@@ -262,7 +279,6 @@ class emergency_contacts : AppCompatActivity() {
             setColorFilter(resources.getColor(R.color.icon_tint, null))
             isClickable = true
             isFocusable = true
-            // Set the OnClickListener to show the popup menu anchored to this view
             setOnClickListener { view ->
                 showContactOptions(contact, view)
             }
@@ -343,7 +359,6 @@ class emergency_contacts : AppCompatActivity() {
                 database.child(contact.id).removeValue()
                     .addOnSuccessListener {
                         Toast.makeText(this, "Contact deleted successfully", Toast.LENGTH_SHORT).show()
-                        // The list will automatically refresh due to the ValueEventListener
                     }
                     .addOnFailureListener { e ->
                         Toast.makeText(this, "Failed to delete: ${e.message}", Toast.LENGTH_SHORT).show()

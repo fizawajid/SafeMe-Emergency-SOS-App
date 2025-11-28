@@ -132,7 +132,7 @@
             android:layout_marginTop="24dp"
             android:src="@drawable/button_background"
             android:text="Sign In"
-            android:backgroundTint="#4CAF50"
+            android:backgroundTint="@color/theme"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:textSize="16sp"
@@ -159,7 +159,7 @@
                 android:layout_height="wrap_content"
                 android:text="Sign Up"
                 android:backgroundTint="@color/black"
-                android:textColor="#4CAF50"
+                android:textColor="@color/theme"
                 android:textSize="15sp"
                 android:textStyle="bold" />
         </LinearLayout>

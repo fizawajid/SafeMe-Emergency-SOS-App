@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">finalproject</string>
+    <string name="app_name">SafeMe</string>
 
     <!-- Emergency Alert Screen -->
     <string name="emergency_alert">Emergency Alert</string>

@@ -4,12 +4,14 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 
 class add_emergency_contact : AppCompatActivity() {
 
     private lateinit var database: DatabaseReference
+    private lateinit var auth: FirebaseAuth
     private lateinit var etFullName: EditText
     private lateinit var spinnerRelationship: Spinner
     private lateinit var spinnerPriority: Spinner
@@ -34,7 +36,22 @@ class add_emergency_contact : AppCompatActivity() {
         setContentView(R.layout.add_emergency_contact)
 
         // Initialize Firebase
-        database = FirebaseDatabase.getInstance().reference.child("emergency_contacts")
+        auth = FirebaseAuth.getInstance()
+
+        // Check if user is logged in
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            Toast.makeText(this, "Please log in first", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        // Initialize database reference with user-specific path
+        database = FirebaseDatabase.getInstance()
+            .reference
+            .child("users")
+            .child(currentUser.uid)
+            .child("emergency_contacts")
 
         // Check if we're in edit mode
         isEditMode = intent.getBooleanExtra("EDIT_MODE", false)

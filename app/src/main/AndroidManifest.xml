@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <!-- Internet Permissions -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-
-    <!-- Shake Detection Permissions -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <!-- Shake Detection Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-
-    <!-- Location Permissions -->
+    <uses-permission android:name="android.permission.VIBRATE" /> <!-- Location Permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Background Location (Optional - only if you need background alerts) -->
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> <!-- Background Location (Optional - only if you need background alerts) -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> <!-- Camera Permissions -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -31,21 +31,28 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Finalproject"
         tools:targetApi="31">
+        <activity
+            android:name=".ImageViewActivity"
+            android:exported="false" />
 
-        <!-- Google Play Services metadata -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider> <!-- Google Play Services metadata -->
         <meta-data
             android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
-
-        <!-- ==================== SHAKE DETECTION SERVICE ==================== -->
+            android:value="@integer/google_play_services_version" /> <!-- ==================== SHAKE DETECTION SERVICE ==================== -->
         <!-- Shake Detector Service - Monitors accelerometer for emergency shakes -->
         <service
             android:name=".ShakeDetectorService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location" />
-
-        <!-- Boot Receiver - Restarts shake detection after device reboot -->
+            android:foregroundServiceType="location" /> <!-- Boot Receiver - Restarts shake detection after device reboot -->
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
@@ -53,28 +60,23 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
-        </receiver>
-        <!-- ================================================================= -->
-
+        </receiver> <!-- ================================================================= -->
         <!-- Activities -->
         <activity
             android:name=".OfflineAlertsActivity"
             android:exported="false" />
         <activity
             android:name=".finishfile"
-            android:exported="false" />
-
-        <!-- Launcher Activity -->
+            android:exported="false" /> <!-- Launcher Activity -->
         <activity
             android:name=".getstarted"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <!-- Authentication Activities -->
+        </activity> <!-- Authentication Activities -->
         <activity
             android:name=".createaccount_email"
             android:exported="false" />
@@ -89,20 +91,18 @@
             android:exported="false" />
         <activity
             android:name=".otp"
-            android:exported="false" />
-
-        <!-- Main App Activities -->
+            android:exported="false" /> <!-- Main App Activities -->
         <activity
             android:name=".dashboard"
             android:exported="false" />
         <activity
-            android:name=".travel_safety"
+            android:name=".TravelSafety"
             android:exported="false" />
         <activity
-            android:name=".personal_safety"
+            android:name=".PersonalSafety"
             android:exported="false" />
         <activity
-            android:name=".medical_safety"
+            android:name=".MedicalSafety"
             android:exported="false" />
         <activity
             android:name=".gotosettings"

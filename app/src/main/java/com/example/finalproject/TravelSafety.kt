@@ -1,18 +1,21 @@
 package com.example.finalproject
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.android.volley.Request.Method.POST
+import com.android.volley.Request.Method.*
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.example.finalproject.repository.AlertRepository
@@ -26,8 +29,20 @@ import com.google.firebase.database.*
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.provider.MediaStore
+import android.util.Base64
+import androidx.core.content.FileProvider
+import com.android.volley.Request
+import com.example.finalproject.utils.Config
+import org.json.JSONArray
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 
-class medical_safety : AppCompatActivity() {
+class TravelSafety : AppCompatActivity() {
 
     private lateinit var database: DatabaseReference
     private lateinit var btnBack: ImageView
@@ -57,22 +72,56 @@ class medical_safety : AppCompatActivity() {
     private var emailsFailed = 0
     private var totalEmailsToSend = 0
 
-    // Sender email
+    // Get sender email from logged in user
     private val SENDER_EMAIL = FirebaseAuth.getInstance().currentUser?.email ?: "noreply@safeme.com"
 
     // EmailJS credentials
     private val EMAILJS_SERVICE_ID = "service_7c31t4s"
     private val EMAILJS_TEMPLATE_ID = "template_6woyk8b"
     private val EMAILJS_PUBLIC_KEY = "z0XPnqySWvklrNwlF"
+    // Image handling
+    private lateinit var btnCamera: LinearLayout
+    private lateinit var btnGallery: LinearLayout
+    private lateinit var ivSelectedImage: ImageView
+
+    private var selectedImageUri: Uri? = null
+    private var selectedImageBase64: String? = null
+
+    // Add Launchers
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            handleGalleryImage(it)
+        }
+    }
+
+    private val takePictureLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            handleCameraImage()
+        }
+    }
+
+    private var currentPhotoPath: String? = null
+
+    // Permission codes
+    private val CAMERA_PERMISSION_REQUEST_CODE = 1004
+    private val STORAGE_PERMISSION_REQUEST_CODE = 1003
+
+    private val storagePermissions = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+    } else {
+        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
 
     companion object {
-        private const val TAG = "MedicalSafety"
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1002
+        private const val TAG = "TravelSafety"
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1003
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.medical_safety)
+        setContentView(R.layout.travel_safety)
 
         // Initialize repository and location client
         alertRepository = AlertRepository(this)
@@ -96,11 +145,240 @@ class medical_safety : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         tvProgressStatus = findViewById(R.id.tvProgressStatus)
         progressContainer = findViewById(R.id.progressContainer)
+
+        btnCamera = findViewById(R.id.btnCamera)
+        btnGallery = findViewById(R.id.btnGallery)
+        ivSelectedImage = findViewById(R.id.ivSelectedImage)
     }
 
     private fun setupClickListeners() {
         btnBack.setOnClickListener { finish() }
         btnSendAlert.setOnClickListener { sendEmergencyAlert() }
+        btnCamera.setOnClickListener { checkCameraPermission() } // Still need camera permission
+        btnGallery.setOnClickListener { openGallery() } // No permission needed!
+        ivSelectedImage.setOnClickListener { showImageOptions() }
+    }
+
+    private fun showImageOptions() {
+        val options = arrayOf("View Image", "Remove Image")
+        AlertDialog.Builder(this)
+            .setTitle("Image Options")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> selectedImageUri?.let { viewImage(it) }
+                    1 -> removeSelectedImage()
+                }
+            }
+            .show()
+    }
+
+    private fun viewImage(uri: Uri) {
+        val intent = Intent(this, ImageViewActivity::class.java).apply {
+            putExtra("image_uri", uri.toString())
+        }
+        startActivity(intent)
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+    }
+
+    private fun removeSelectedImage() {
+        selectedImageUri = null
+        selectedImageBase64 = null
+        currentPhotoPath = null
+        ivSelectedImage.visibility = View.GONE
+        ivSelectedImage.setImageBitmap(null)
+    }
+
+    // Camera and Gallery Permission Handling
+    private fun checkCameraPermission() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                openCamera()
+            }
+            shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
+                AlertDialog.Builder(this)
+                    .setTitle("Camera Permission Required")
+                    .setMessage("This app needs camera access to take photos for travel emergency alerts.")
+                    .setPositiveButton("Grant") { _, _ ->
+                        requestCameraPermission()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+            else -> {
+                requestCameraPermission()
+            }
+        }
+    }
+
+    private fun checkStoragePermission() {
+        // Check if we already have the required permission
+        val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        }
+
+        if (hasPermission) {
+            openGallery()
+        } else {
+            // Check if we should show explanation
+            val shouldShowRationale = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                shouldShowRequestPermissionRationale(Manifest.permission.READ_MEDIA_IMAGES)
+            } else {
+                shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+
+            if (shouldShowRationale) {
+                AlertDialog.Builder(this)
+                    .setTitle("Photo Access Required")
+                    .setMessage("This app needs access to your photos to select images for emergency alerts.")
+                    .setPositiveButton("Grant") { _, _ ->
+                        requestStoragePermission()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            } else {
+                requestStoragePermission()
+            }
+        }
+    }
+
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.CAMERA),
+            CAMERA_PERMISSION_REQUEST_CODE
+        )
+    }
+
+    private fun requestStoragePermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            storagePermissions, // Use the dynamic permissions array
+            STORAGE_PERMISSION_REQUEST_CODE
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        when (requestCode) {
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    getCurrentLocation()
+                } else {
+                    Toast.makeText(
+                        this,
+                        "Location permission denied. Alerts will be sent without location.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+            CAMERA_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openCamera()
+                } else {
+                    Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show()
+                }
+            }
+            STORAGE_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openGallery()
+                } else {
+                    Toast.makeText(this, "Storage permission denied", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun openGallery() {
+        galleryLauncher.launch("image/*")
+    }
+
+    private fun openCamera() {
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        val photoFile = createImageFile()
+
+        photoFile?.let {
+            val photoURI = FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                it
+            )
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+            takePictureLauncher.launch(intent)
+        }
+    }
+
+    @Throws(Exception::class)
+    private fun createImageFile(): File {
+        val timeStamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
+        val storageDir = getExternalFilesDir(null)
+        return File.createTempFile(
+            "JPEG_${timeStamp}_",
+            ".jpg",
+            storageDir
+        ).apply {
+            currentPhotoPath = absolutePath
+        }
+    }
+
+    private fun handleCameraImage() {
+        currentPhotoPath?.let { path ->
+            val file = File(path)
+            if (file.exists()) {
+                selectedImageUri = Uri.fromFile(file)
+                displaySelectedImage(selectedImageUri!!)
+                compressAndEncodeImage(selectedImageUri!!)
+            }
+        }
+    }
+
+    private fun handleGalleryImage(uri: Uri) {
+        selectedImageUri = uri
+        displaySelectedImage(uri)
+        compressAndEncodeImage(uri)
+    }
+
+    private fun displaySelectedImage(uri: Uri) {
+        try {
+            val inputStream = contentResolver.openInputStream(uri)
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            inputStream?.close()
+
+            ivSelectedImage.setImageBitmap(bitmap)
+            ivSelectedImage.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            Log.e(TAG, "Error displaying image", e)
+            Toast.makeText(this, "Error loading image", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun compressAndEncodeImage(uri: Uri) {
+        try {
+            val inputStream = contentResolver.openInputStream(uri)
+            val originalBitmap = BitmapFactory.decodeStream(inputStream)
+            inputStream?.close()
+
+            // Compress image
+            val outputStream = ByteArrayOutputStream()
+            originalBitmap?.compress(Bitmap.CompressFormat.JPEG, Config.IMAGE_COMPRESSION_QUALITY, outputStream)
+            val compressedBytes = outputStream.toByteArray()
+
+            // Convert to base64
+            selectedImageBase64 = Base64.encodeToString(compressedBytes, Base64.DEFAULT)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error compressing image", e)
+            Toast.makeText(this, "Error processing image", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun checkLocationPermission() {
@@ -116,7 +394,7 @@ class medical_safety : AppCompatActivity() {
                 // Show explanation dialog
                 AlertDialog.Builder(this)
                     .setTitle("Location Permission Required")
-                    .setMessage("This app needs location access to send your current location in medical emergency alerts.")
+                    .setMessage("This app needs location access to send your current location in travel emergency alerts. This is especially important when traveling in unfamiliar areas.")
                     .setPositiveButton("Grant") { _, _ ->
                         requestLocationPermission()
                     }
@@ -139,26 +417,6 @@ class medical_safety : AppCompatActivity() {
             ),
             LOCATION_PERMISSION_REQUEST_CODE
         )
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                getCurrentLocation()
-            } else {
-                Toast.makeText(
-                    this,
-                    "Location permission denied. Alerts will be sent without location.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
     }
 
     private fun getCurrentLocation() {
@@ -220,22 +478,28 @@ class medical_safety : AppCompatActivity() {
 
     private fun loadFinishData() {
         val finishRef = FirebaseDatabase.getInstance().getReference("finish").child(userId)
+
         finishRef.get().addOnSuccessListener { snapshot ->
             finishData = snapshot.getValue(FinishData::class.java)
             Log.d(TAG, "Finish data loaded: $finishData")
         }.addOnFailureListener { e ->
             Log.e(TAG, "Failed to load finish data", e)
+            Toast.makeText(this, "Failed to load user data: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun loadEmergencyContacts() {
         database = FirebaseDatabase.getInstance().getReference("emergency_contacts")
+
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 contactsList.clear()
                 for (contactSnapshot in snapshot.children) {
                     val contact = contactSnapshot.getValue(EmergencyContact::class.java)
-                    contact?.let { contactsList.add(it) }
+                    contact?.let {
+                        contactsList.add(it)
+                        Log.d(TAG, "Loaded contact: ${it.fullName}, Email: ${it.email}")
+                    }
                 }
 
                 contactsList.sortWith(compareBy {
@@ -246,14 +510,13 @@ class medical_safety : AppCompatActivity() {
                         else -> 4
                     }
                 })
-
                 displayContacts()
                 updateContactCount()
             }
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "Failed to load contacts", error.toException())
-                Toast.makeText(this@medical_safety, "Failed to load contacts: ${error.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@TravelSafety, "Failed to load contacts: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
@@ -293,7 +556,9 @@ class medical_safety : AppCompatActivity() {
         contactView.addView(imgAvatar)
 
         val contentLayout = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 12 }
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = 12
+            }
             orientation = LinearLayout.VERTICAL
         }
 
@@ -372,25 +637,115 @@ class medical_safety : AppCompatActivity() {
             saveAlertToStorage(message, contactsWithEmail)
         }
 
-        // Only try to send emails if online
+        // Handle image upload and alert creation
         if (NetworkUtils.isNetworkAvailable(this)) {
-            emailsSent = 0
-            emailsFailed = 0
-            totalEmailsToSend = contactsWithEmail.size
-
-            for (contact in contactsWithEmail) {
-                sendEmail(contact.email!!, contact.fullName, message)
+            if (selectedImageBase64 != null) {
+                // Upload image first, then send emails
+                uploadImageAndCreateAlert(message, contactsWithEmail)
+            } else {
+                // No image, just send emails
+                sendEmailsToContacts(contactsWithEmail, message)
             }
         } else {
-            // Offline mode - just save locally
-            tvProgressStatus.text = "Alert saved locally (offline)"
-            Toast.makeText(this, "No internet. Alert saved locally and will sync when online.", Toast.LENGTH_LONG).show()
-
-            btnSendAlert.postDelayed({
-                hideProgress()
-                finish()
-            }, 2000)
+            // Offline mode
+            handleOfflineAlert(message, contactsWithEmail)
         }
+    }
+
+    private fun uploadImageAndCreateAlert(message: String, contacts: List<EmergencyContact>) {
+        tvProgressStatus.text = "Uploading image..."
+
+        val requestQueue = Volley.newRequestQueue(this)
+        val jsonBody = JSONObject().apply {
+            put("user_id", userId)
+            put("image_data", selectedImageBase64)
+            put("emergency_type", "travel") // Changed to "travel"
+            put("image_name", "travel_emergency_${System.currentTimeMillis()}.jpg")
+            put("mime_type", "image/jpeg")
+        }
+
+        val uploadRequest = JsonObjectRequest(
+            Request.Method.POST,
+            Config.UPLOAD_IMAGE_ENDPOINT,
+            jsonBody,
+            { response ->
+                val imageId = response.optString("image_id")
+                if (imageId.isNotEmpty()) {
+                    createImageAlert(message, contacts, imageId)
+                } else {
+                    // Image upload failed but continue without image
+                    sendEmailsToContacts(contacts, message)
+                }
+            },
+            { error ->
+                Log.e(TAG, "Image upload failed", error)
+                Toast.makeText(this, "Image upload failed, sending alert without image", Toast.LENGTH_SHORT).show()
+                sendEmailsToContacts(contacts, message)
+            }
+        )
+
+        requestQueue.add(uploadRequest)
+    }
+
+    private fun createImageAlert(message: String, contacts: List<EmergencyContact>, imageId: String) {
+        val requestQueue = Volley.newRequestQueue(this)
+        val locationData = currentLocation?.let {
+            JSONObject().apply {
+                put("latitude", it.latitude)
+                put("longitude", it.longitude)
+                put("address", locationAddress)
+            }
+        } ?: JSONObject()
+
+        val jsonBody = JSONObject().apply {
+            put("user_id", userId)
+            put("alert_id", generateAlertId())
+            put("image_ids", JSONArray().put(imageId))
+            put("message", message)
+            put("location_data", locationData.toString())
+            put("emergency_type", "travel") // Changed to "travel"
+        }
+
+        val alertRequest = JsonObjectRequest(
+            Request.Method.POST,
+            Config.CREATE_ALERT_ENDPOINT,
+            jsonBody,
+            { response ->
+                Log.d(TAG, "Alert created in PHP: ${response.toString()}")
+                sendEmailsToContacts(contacts, message)
+            },
+            { error ->
+                Log.e(TAG, "Alert creation failed", error)
+                // Continue sending emails even if alert creation fails
+                sendEmailsToContacts(contacts, message)
+            }
+        )
+
+        requestQueue.add(alertRequest)
+    }
+
+    private fun sendEmailsToContacts(contacts: List<EmergencyContact>, message: String) {
+        emailsSent = 0
+        emailsFailed = 0
+        totalEmailsToSend = contacts.size
+
+        for (contact in contacts) {
+            sendEmail(contact.email!!, contact.fullName, message)
+        }
+    }
+
+    private fun generateAlertId(): String {
+        return "travel_alert_${userId}_${System.currentTimeMillis()}"
+    }
+
+    private fun handleOfflineAlert(message: String, contacts: List<EmergencyContact>) {
+        tvProgressStatus.text = "Alert saved locally (offline)"
+        Toast.makeText(this, "No internet. Alert saved locally and will sync when online.", Toast.LENGTH_LONG).show()
+
+        btnSendAlert.postDelayed({
+            hideProgress()
+            finish()
+        }, 2000)
     }
 
     private suspend fun saveAlertToStorage(message: String, contacts: List<EmergencyContact>) {
@@ -410,7 +765,7 @@ class medical_safety : AppCompatActivity() {
         val result = alertRepository.saveAlert(
             userId = userId,
             userEmail = SENDER_EMAIL,
-            type = "Medical Emergency",
+            type = "Travel Emergency",
             message = message,
             additionalMessage = etAdditionalMessage.text.toString(),
             contactsJson = contactsJson,
@@ -445,12 +800,17 @@ class medical_safety : AppCompatActivity() {
 
     private fun buildAlertMessage(additionalMessage: String): String {
         val sb = StringBuilder()
-        sb.append("🚨 MEDICAL EMERGENCY ALERT 🚨\n\n")
+        sb.append("🚨 TRAVEL EMERGENCY ALERT 🚨\n\n")
         sb.append("From: $SENDER_EMAIL\n")
         sb.append("Time: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())}\n\n")
 
-        // Add location information
-        sb.append("📍 LOCATION:\n")
+        // Add image info if available
+        if (selectedImageUri != null) {
+            sb.append("📷 IMAGE ATTACHED: A photo has been included with this alert\n\n")
+        }
+
+        // Add location information - CRITICAL FOR TRAVEL EMERGENCIES
+        sb.append("📍 CURRENT LOCATION:\n")
         if (currentLocation != null) {
             sb.append("Address: $locationAddress\n")
             sb.append("Coordinates: ${currentLocation!!.latitude}, ${currentLocation!!.longitude}\n")
@@ -469,7 +829,7 @@ class medical_safety : AppCompatActivity() {
             if (data.locationEnabled) sb.append("\n📍 Location sharing is enabled\n")
         }
 
-        sb.append("\n⚠️ MEDICAL EMERGENCY - IMMEDIATE RESPONSE REQUIRED ⚠️")
+        sb.append("\n🌍 TRAVEL EMERGENCY - IMMEDIATE ASSISTANCE REQUIRED 🌍")
         sb.append("\nThis is an automated emergency alert. Please respond immediately.")
         return sb.toString()
     }
@@ -524,9 +884,6 @@ class medical_safety : AppCompatActivity() {
         if (emailsSent + emailsFailed >= totalEmailsToSend) {
             runOnUiThread {
                 updateProgress(totalEmailsToSend, totalEmailsToSend)
-
-
-
 
 
                 btnSendAlert.postDelayed({

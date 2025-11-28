@@ -74,7 +74,7 @@
                 android:textAllCaps="false"
                 android:textColor="@color/black"
                 android:textSize="11sp"
-                android:backgroundTint="@color/green_primary"
+                android:backgroundTint="@color/theme"
                 android:layout_marginEnd="8dp" />
 
             <Button
@@ -86,7 +86,7 @@
                 android:textAllCaps="false"
                 android:textColor="@color/black"
                 android:textSize="11sp"
-                android:backgroundTint="@color/green_primary" />
+                android:backgroundTint="@color/theme" />
         </LinearLayout>
 
         <!-- Alert Summary Card -->
@@ -128,7 +128,7 @@
                     android:layout_weight="1"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:background="@color/green_primary"
+                    android:background="@color/theme"
                     android:padding="8dp">
 
                     <TextView
@@ -155,7 +155,7 @@
                     android:layout_weight="1"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:background="@color/green_primary"
+                    android:background="@color/theme"
                     android:padding="8dp"
                     android:layout_marginStart="1dp">
 
@@ -183,7 +183,7 @@
                     android:layout_weight="1"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:background="@color/green_primary"
+                    android:background="@color/theme"
                     android:padding="8dp"
                     android:layout_marginStart="1dp">
 
@@ -211,7 +211,7 @@
                     android:layout_weight="1"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:background="@color/green_primary"
+                    android:background="@color/theme"
                     android:padding="8dp"
                     android:layout_marginStart="1dp">
 

@@ -49,7 +49,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Profile Information"
-                android:textColor="@color/green_primary"
+                android:textColor="@color/theme"
                 android:textStyle="bold"
                 android:textSize="13sp"
                 android:layout_marginBottom="16dp" />
@@ -127,7 +127,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Notifications"
-                android:textColor="@color/green_primary"
+                android:textColor="@color/theme"
                 android:textStyle="bold"
                 android:textSize="13sp"
                 android:layout_marginBottom="16dp" />
@@ -322,8 +322,8 @@
                     android:id="@+id/seekBarSensitivity"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:progressTint="@color/green_primary"
-                    android:thumbTint="@color/green_primary"
+                    android:progressTint="@color/theme"
+                    android:thumbTint="@color/theme"
                     android:progressBackgroundTint="@color/white"
                     android:layout_marginBottom="4dp"
                     android:enabled="false" />
@@ -381,7 +381,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Shake detection works in the background. Make sure you have emergency contacts added."
-                    android:textColor="@color/green_primary"
+                    android:textColor="@color/theme"
                     android:textSize="11sp"
                     android:lineSpacingExtra="2dp" />
             </LinearLayout>
@@ -433,7 +433,7 @@
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:src="@drawable/ic_help"
-                    app:tint="@color/green_primary" />
+                    app:tint="@color/theme" />
             </LinearLayout>
 
             <LinearLayout

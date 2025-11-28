@@ -36,12 +36,10 @@
                 android:gravity="center_vertical">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="40dp"
+                    android:layout_height="30dp"
                     android:src="@drawable/ic_contacts"
-                    android:tint="#00FF00" />
-                    android:src="@drawable/people"
-                    app:tint="#00FF00" />
+                    app:tint="@color/theme" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -276,14 +274,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:buttonTint="#00FF00" />
+                    android:buttonTint="@color/theme" />
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:src="@drawable/ic_sms"
-                    android:tint="#FFFFFF"
-                    app:tint="#00FF00"
+                    app:tint="#FFFFFF"
                     android:layout_marginStart="12dp" />
 
                 <TextView
@@ -315,7 +312,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:buttonTint="#00FF00" />
+                    android:buttonTint="@color/theme" />
 
                 <ImageView
                     android:layout_width="24dp"
@@ -351,7 +348,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:buttonTint="#00FF00" />
+                    android:buttonTint="@color/theme" />
 
                 <ImageView
                     android:layout_width="24dp"
@@ -462,7 +459,8 @@
             android:layout_weight="1"
             android:text="@string/cancel"
             android:background="@drawable/button_cancel"
-            android:textColor="#00FF00"
+            android:textColor="@color/theme"
+            android:layout_marginEnd="8dp"
             android:textSize="14sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -476,6 +474,7 @@
             android:layout_weight="1"
             android:text="@string/add_contact"
             android:background="@drawable/button_add_contact_action"
+            android:layout_marginEnd="8dp"
             android:textColor="#000000"
             android:textSize="14sp"
             android:textStyle="bold"
