@@ -1,5 +1,6 @@
 package com.example.finalproject
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.*
@@ -52,9 +53,11 @@ class add_emergency_contact : AppCompatActivity() {
             return
         }
 
-        // Use the same global path as other activities
+        // FIXED: Use user-specific path instead of global path
         database = FirebaseDatabase.getInstance()
             .reference
+            .child("users")
+            .child(currentUser.uid)
             .child("emergency_contacts")
 
         // Check if we're in edit mode
@@ -510,11 +513,13 @@ class add_emergency_contact : AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
 
+                val currentUser = auth.currentUser
                 // Log for debugging
-                android.util.Log.d("AddContact", "Contact saved: $contactId at path: emergency_contacts/$contactId")
+                android.util.Log.d("AddContact", "Contact saved: $contactId at path: users/${currentUser?.uid}/emergency_contacts/$contactId")
 
                 // Clear form after successful save
                 clearForm()
+                navigateToEmergencyContacts()
             }
             .addOnFailureListener { e ->
                 Toast.makeText(
@@ -526,6 +531,14 @@ class add_emergency_contact : AppCompatActivity() {
                 // Log error
                 android.util.Log.e("AddContact", "Failed to save contact", e)
             }
+    }
+
+    private fun navigateToEmergencyContacts() {
+        val intent = Intent(this, emergency_contacts::class.java)
+        // Clear the back stack so user doesn't come back to this form
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
+        finish()
     }
 
     private fun updateContactInFirebase(contactId: String, contact: EmergencyContact) {

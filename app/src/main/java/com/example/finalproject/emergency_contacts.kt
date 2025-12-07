@@ -36,9 +36,11 @@ class emergency_contacts : AppCompatActivity() {
             return
         }
 
-        // FIXED: Use the same global path as add_emergency_contact
+        // FIXED: Use user-specific path instead of global path
         database = FirebaseDatabase.getInstance()
             .reference
+            .child("users")
+            .child(currentUser.uid)
             .child("emergency_contacts")
 
         // Initialize views

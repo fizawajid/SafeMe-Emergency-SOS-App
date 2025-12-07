@@ -489,7 +489,18 @@ class TravelSafety : AppCompatActivity() {
     }
 
     private fun loadEmergencyContacts() {
-        database = FirebaseDatabase.getInstance().getReference("emergency_contacts")
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            Toast.makeText(this, "Please log in first", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        database = FirebaseDatabase.getInstance()
+            .reference
+            .child("users")
+            .child(currentUser.uid)
+            .child("emergency_contacts")
 
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
